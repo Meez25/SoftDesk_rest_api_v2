@@ -36,5 +36,5 @@ urlpatterns = [
     path("refresh/", TokenRefreshView.as_view(), name="refresh"),
     path("verify/", TokenVerifyView.as_view(), name="verify"),
     path("signup/", views.CreateUserView.as_view(), name="signup"),
-    path('projects/', include('project.urls')),
+    path('', include('project.urls')),
 ]

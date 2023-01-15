@@ -70,7 +70,7 @@ class PrivateProjectApiTests(TestCase):
         projects = Project.objects.all().order_by('-id')
         serializer = ProjectSerializer(projects, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+        self.assertEqual(res.data['results'], serializer.data)
 
     def test_get_project_detail(self):
         """Test retrieving a project detail."""
@@ -121,6 +121,16 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Project.objects.count(), 0)
+
+    def test_partial_update_is_impossible(self):
+        """That that the patch method is not allowed."""
+        project = create_project(user=self.user)
+        url = detail_url(project.id)
+        res = self.client.patch(url, {
+            'title': 'Test project updated',
+            })
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_delete_project_by_other_user(self):
         """Test deleting a project by other user."""

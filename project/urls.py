@@ -9,7 +9,7 @@ from project import views
 
 
 router = DefaultRouter()
-router.register('project', views.ProjectViewSet)
+router.register('projects', views.ProjectViewSet)
 
 
 app_name = 'project'

@@ -8,11 +8,11 @@ from rest_framework import (
         )
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
 
 from core.models import Project
 
 from project import serializers
+from project import permissions
 
 
 class ProjectViewSet(mixins.ListModelMixin,
@@ -22,8 +22,8 @@ class ProjectViewSet(mixins.ListModelMixin,
                      mixins.DestroyModelMixin,
                      viewsets.GenericViewSet):
     """Manage projects in the database."""
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+
+    permission_classes = (IsAuthenticated, permissions.IsOwnerOrReadOnly)
     queryset = Project.objects.all()
     serializer_class = serializers.ProjectDetailSerializer
 
@@ -41,11 +41,6 @@ class ProjectViewSet(mixins.ListModelMixin,
         """Create a new project."""
         serializer.save(author_user_id=self.request.user)
 
-    def destroy(self, request, *args, **kwargs):
-        """Delete a project."""
-        instance = self.get_object()
-        if instance.author_user_id == self.request.user:
-            self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+    def partial_update(self, request, *args, **kwargs):
+        """Partial update of a project is not possible."""
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

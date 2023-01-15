@@ -5,8 +5,9 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
+from django.contrib.auth import get_user_model
 
 CREATE_USER_URL = reverse('signup')
 TOKEN_URL = reverse('login')
@@ -101,3 +102,39 @@ class PublicUserApiTests(TestCase):
 
         self.assertNotIn('refresh', res.data)
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class JWTAuthenticationTestCase(APITestCase):
+    def test_get_token(self):
+        """
+        Test that controls the implementation of the JWT Authentication.
+        A pair of token is created and the token is testing with the
+        verify endpoint.
+        """
+        user = get_user_model().objects.create_user(
+                first_name="first_name",
+                last_name="last_name",
+                email="email5@email.com",
+                password="password")
+        user.is_active = False
+        user.save()
+        response = self.client.post(TOKEN_URL, {'email': 'email5@email.com',
+                                                'password': 'password'},
+                                    format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        user.is_active = True
+        user.save()
+        response = self.client.post(TOKEN_URL, {"email": "email5@email.com",
+                                                "password": "password"},
+                                    format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('access' in response.data)
+        token = response.data['access']
+        verify_url = reverse('verify')
+        response = self.client.post(verify_url, {"token": token},
+                                    format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(verify_url, {"token": "whatever"},
+                                    format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
