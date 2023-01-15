@@ -25,7 +25,7 @@ from rest_framework_simplejwt.views import (
         TokenVerifyView,
         )
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -36,4 +36,5 @@ urlpatterns = [
     path("refresh/", TokenRefreshView.as_view(), name="refresh"),
     path("verify/", TokenVerifyView.as_view(), name="verify"),
     path("signup/", views.CreateUserView.as_view(), name="signup"),
+    path('projects/', include('project.urls')),
 ]
