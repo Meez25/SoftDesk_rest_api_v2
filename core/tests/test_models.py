@@ -4,6 +4,8 @@ Tests for models.
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
+from core import models
+
 
 def create_user(email='user@example.com', password='testpass'):
     """Create a sample user."""
@@ -57,3 +59,18 @@ class ModelTest(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_project(self):
+        """Test creating a project."""
+        user = create_user()
+        project = models.Project.objects.create(
+                author_user_id=user,
+                title='Test Project',
+                description="Test project description",
+                type="test",
+                )
+
+        self.assertEqual(project.title, 'Test Project')
+        self.assertEqual(project.description, 'Test project description')
+        self.assertEqual(project.type, 'test')
+        self.assertEqual(project.author_user_id, user)
