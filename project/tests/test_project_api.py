@@ -72,6 +72,13 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['results'], serializer.data)
 
+    def test_retrieve_projects_does_not_return_description(self):
+        """Test that the description is not returned in the list."""
+        create_project(user=self.user)
+        res = self.client.get(PROJECTS_URL)
+
+        self.assertNotIn('description', res.data['results'][0])
+
     def test_get_project_detail(self):
         """Test retrieving a project detail."""
         project = create_project(user=self.user)

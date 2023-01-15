@@ -12,7 +12,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ('id', 'title', 'description', 'type', 'author_user_id')
         read_only_fields = ('id',)
-        write_only_fields = ('description',)
+        extra_kwargs = {
+            'description': {'write_only': True},
+        }
 
     def create(self, validated_data):
         """Create a project."""
