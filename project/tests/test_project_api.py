@@ -181,12 +181,93 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(contributor.role, payload['role'])
         self.assertEqual(contributor.permission, payload['permission'])
 
+    def test_create_contributor_when_project_is_created(self):
+        """That that the author of the project is set as a contributor."""
+        project = create_project(user=self.user)
+        contributor = Contributor.objects.filter(project_id=project.id,
+                                                 user_id=self.user)
+        self.assertTrue(contributor.exists())
+        self.assertEqual(len(contributor), 1)
+
     def test_delete_contributor(self):
-        pass
+        """Test that test the deletion of a contributor."""
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        contributor = Contributor.objects.create(
+                project_id=project,
+                user_id=other_user,
+                role='Test role',
+                permission='CTR',
+                )
+        url = reverse('project:projects-users-detail', args=[project.id,
+                                                             contributor.id])
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Contributor.objects.count(), 1)
+
+    def test_delete_contributor_by_contributor_not_allowed(self):
+        """Test that a contributor cannot delete another contributor."""
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        contributor = Contributor.objects.create(
+                project_id=project,
+                user_id=other_user,
+                role='Test role',
+                permission='CTR',
+                )
+        owner_contributor = Contributor.objects.get(project_id=project.id,
+                                                    user_id=self.user)
+        url = reverse('project:projects-users-detail',
+                      args=[project.id,
+                            owner_contributor.id])
+        other_user_client = APIClient()
+        other_user_client.force_authenticate(user=other_user)
+        res = other_user_client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(Contributor.objects.count(), 2)
 
     def test_retrieve_contributors(self):
-        pass
+        """Test retrieving contributors."""
+        other_user = create_user(
+                email="hello@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        Contributor.objects.create(
+                project_id=project,
+                user_id=other_user,
+                role='Test role',
+                permission='CTR',
+                )
+        url = reverse('project:projects-users-list', args=[project.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data['results']), 2)
 
     def test_forbid_contributor_detail(self):
-        pass
+        """Test that a contributor cannot access the contributor detail."""
+        other_user = create_user(
+                email="hello@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        contributor = Contributor.objects.create(
+                project_id=project,
+                user_id=other_user,
+                role='Test role',
+                permission='CTR',
+                )
+        url = reverse('project:projects-users-detail', args=[project.id,
+                                                             contributor.id])
+        res = self.client.get(url)
 
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

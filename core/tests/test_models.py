@@ -90,29 +90,27 @@ class ModelTest(TestCase):
     def test_create_contributor(self):
         """Test creating a contributor."""
         user = create_user()
+        other_user = create_user(
+                email="toto@toto.com",
+                password="testpass",
+                )
         project = create_project(user)
         contributor = models.Contributor.objects.create(
                 project_id=project,
-                user_id=user,
-                permission='contributor',
+                user_id=other_user,
+                permission='CTR',
                 role='developer',
                 )
 
         self.assertEqual(contributor.project_id, project)
-        self.assertEqual(contributor.user_id, user)
-        self.assertEqual(contributor.permission, 'contributor')
+        self.assertEqual(contributor.user_id, other_user)
+        self.assertEqual(contributor.permission, 'CTR')
         self.assertEqual(contributor.role, 'developer')
 
     def test_forbid_duplicate_contributors(self):
         """Test that a contributor cannot be added twice."""
         user = create_user()
         project = create_project(user)
-        models.Contributor.objects.create(
-                project_id=project,
-                user_id=user,
-                permission='contributor',
-                role='developer',
-                )
         with self.assertRaises(IntegrityError):
             models.Contributor.objects.create(
                     project_id=project,
@@ -126,14 +124,11 @@ class ModelTest(TestCase):
         automatically added as a contributor"""
         user = create_user()
         project = create_project(user)
-        contributor = models.Contributor.objects.create(
+        contributor = models.Contributor.objects.get(
                 project_id=project,
                 user_id=user,
-                permission='owner',
-                role='developer',
                 )
-
         self.assertEqual(contributor.project_id, project)
         self.assertEqual(contributor.user_id, user)
-        self.assertEqual(contributor.permission, 'owner')
-        self.assertEqual(contributor.role, 'developer')
+        self.assertEqual(contributor.permission, 'OWN')
+        self.assertEqual(contributor.role, 'Owner')

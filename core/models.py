@@ -67,6 +67,19 @@ class Project(models.Model):
         """Return a string representation of the model."""
         return self.title
 
+    def save(self, *args, **kwargs):
+        """Create a contributor for the author."""
+        super().save(*args, **kwargs)
+        if Contributor.objects.filter(project_id=self.id,
+                                      user_id=self.author_user_id
+                                      ).count() == 0:
+            Contributor.objects.create(
+                    user_id=self.author_user_id,
+                    project_id=self,
+                    role='Owner',
+                    permission='OWN',
+                    )
+
 
 class Contributor(models.Model):
     """Contributor model."""

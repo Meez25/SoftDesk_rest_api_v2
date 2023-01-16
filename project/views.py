@@ -55,11 +55,11 @@ class ContributorViewSet(mixins.ListModelMixin,
 
     serializer_class = serializers.ContributorSerializer
     queryset = Contributor.objects.all()
-    permission_classes = (IsAuthenticated, permissions.IsOwnerOrReadOnly)
+    permission_classes = [IsAuthenticated, permissions.ContributorPermission]
 
     def get_queryset(self):
         """Return objects for the current authenticated user only."""
-        return self.queryset.filter(project_id=self.kwargs['project_id'])
+        return self.queryset.filter(project_id=self.kwargs['project_pk'])
 
     def perform_create(self, serializer):
         """Create a new project."""

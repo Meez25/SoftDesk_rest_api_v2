@@ -3,7 +3,7 @@ Serializers for the project APIs.
 """
 from rest_framework import serializers
 
-from core.models import Project, Contributor
+from core.models import Project, Contributor, User
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -15,21 +15,6 @@ class ProjectSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'description': {'write_only': True},
         }
-
-    def create(self, validated_data):
-        """Create a project."""
-        return Project.objects.create(**validated_data)
-
-    def save(self, **kwargs):
-        """Save the project and add the user as a contributor."""
-        project = super().save(**kwargs)
-        contributor = Contributor.objects.create(
-            project_id=project,
-            user_id=self.context['request'].user,
-            permission='owner',
-            role='owner',
-            )
-        contributor.save()
 
 
 class ProjectDetailSerializer(ProjectSerializer):
