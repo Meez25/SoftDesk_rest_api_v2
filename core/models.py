@@ -111,3 +111,34 @@ class Contributor(models.Model):
     def __str__(self):
         """Return a string representation of the model."""
         return self.user_id.email
+
+
+class Issue(models.Model):
+    """Issue model."""
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    tag = models.CharField(max_length=255, blank=True)
+    project_id = models.ForeignKey(
+            'Project',
+            on_delete=models.CASCADE,
+            )
+    priority = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=255, blank=True)
+    author_user_id = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.SET_NULL,
+            null=True,
+            related_name='author_user_id',
+            )
+    assignee_user_id = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.SET_NULL,
+            null=True,
+            related_name='assignee_user_id',
+            )
+    created_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        """Return a string representation of the model."""
+        return self.title

@@ -41,3 +41,15 @@ class ContributorSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create a contributor with correct permissions."""
         return Contributor.objects.create(**validated_data)
+
+    def validate_permission(self, value):
+        """Validate the permission field."""
+        possible_permissions = []
+        for permission in Contributor.PERMISSION_CHOICES:
+            possible_permissions.append(permission[0])
+        if value not in possible_permissions:
+            raise serializers.ValidationError(
+                    'Permission must be one of the following: '
+                    '{}'.format(', '.join(possible_permissions))
+                    )
+        return value

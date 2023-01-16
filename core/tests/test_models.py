@@ -132,3 +132,27 @@ class ModelTest(TestCase):
         self.assertEqual(contributor.user_id, user)
         self.assertEqual(contributor.permission, 'OWN')
         self.assertEqual(contributor.role, 'Owner')
+
+    def create_issue(self):
+        """That creating an issue."""
+        user = create_user()
+        project = create_project(user)
+        issue = models.Issue.objects.create(
+                project_id=project,
+                author_user_id=user,
+                title='Test Issue',
+                description='Test issue description',
+                tag='test tag',
+                priority='test priority',
+                status='test status',
+                assignee_user_id=user,
+                )
+
+        self.assertEqual(issue.project_id, project)
+        self.assertEqual(issue.author_user_id, user)
+        self.assertEqual(issue.title, 'Test Issue')
+        self.assertEqual(issue.description, 'Test issue description')
+        self.assertEqual(issue.tag, 'test tag')
+        self.assertEqual(issue.priority, 'test priority')
+        self.assertEqual(issue.status, 'test status')
+        self.assertEqual(issue.assignee_user_id, user)

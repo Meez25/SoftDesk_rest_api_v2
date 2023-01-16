@@ -7,7 +7,6 @@ from django.urls import reverse
 
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
-from django.contrib.auth import get_user_model
 
 CREATE_USER_URL = reverse('signup')
 TOKEN_URL = reverse('login')

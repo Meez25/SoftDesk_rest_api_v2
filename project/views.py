@@ -63,5 +63,6 @@ class ContributorViewSet(mixins.ListModelMixin,
 
     def perform_create(self, serializer):
         """Create a new project."""
-        serializer.save(user_id=serializer.validated_data['user_id'],
-                        project_id=serializer.validated_data['project_id'])
+        if serializer.is_valid():
+            serializer.save(user_id=serializer.validated_data['user_id'],
+                            project_id=serializer.validated_data['project_id'])
