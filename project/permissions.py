@@ -13,7 +13,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             return obj.author_user_id == request.user
 
 
-class ContributorPermission(permissions.BasePermission):
+class isProjectOwner(permissions.BasePermission):
     """Custom permission for contributors."""
 
     def has_object_permission(self, request, view, obj):
@@ -25,5 +25,27 @@ class ContributorPermission(permissions.BasePermission):
             )
         owner_id = [owner.user_id.id for owner in project_owner]
         if request.user.id in owner_id:
+            return True
+        return False
+
+
+class isProjectContributor(permissions.BasePermission):
+    """Custom permission for contributors."""
+
+    def has_object_permission(self, request, view, obj):
+        project_contributor = Contributor.objects.filter(
+            project_id=obj.project_id,
+            )
+        contributor_id = [cont.user_id.id for cont in project_contributor]
+        if request.user.id in contributor_id:
+            return True
+        return False
+
+    def has_permission(self, request, view):
+        project_contributor = Contributor.objects.filter(
+            project_id=view.kwargs['project_pk'],
+            )
+        contributor_id = [cont.user_id.id for cont in project_contributor]
+        if request.user.id in contributor_id:
             return True
         return False

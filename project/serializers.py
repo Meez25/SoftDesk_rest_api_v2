@@ -3,7 +3,7 @@ Serializers for the project APIs.
 """
 from rest_framework import serializers
 
-from core.models import Project, Contributor, User
+from core.models import Project, Contributor, User, Issue
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -38,10 +38,6 @@ class ContributorSerializer(serializers.ModelSerializer):
         fields = ('id', 'project_id', 'user_id', 'permission', 'role')
         read_only_fields = ('id',)
 
-    def create(self, validated_data):
-        """Create a contributor with correct permissions."""
-        return Contributor.objects.create(**validated_data)
-
     def validate_permission(self, value):
         """Validate the permission field."""
         possible_permissions = []
@@ -53,3 +49,21 @@ class ContributorSerializer(serializers.ModelSerializer):
                     '{}'.format(', '.join(possible_permissions))
                     )
         return value
+
+
+class IssueSerializer(serializers.ModelSerializer):
+    """Serializer for issue objects."""
+    class Meta:
+        model = Issue
+        fields = ('id',
+                  'title',
+                  'description',
+                  'tag',
+                  'author_user_id',
+                  'project_id',
+                  'status',
+                  'priority',
+                  'created_time',
+                  'assignee_user_id',
+                  )
+        read_only_fields = ('id',)

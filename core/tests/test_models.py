@@ -133,7 +133,7 @@ class ModelTest(TestCase):
         self.assertEqual(contributor.permission, 'OWN')
         self.assertEqual(contributor.role, 'Owner')
 
-    def create_issue(self):
+    def test_create_issue(self):
         """That creating an issue."""
         user = create_user()
         project = create_project(user)

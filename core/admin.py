@@ -48,3 +48,4 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Project)
 admin.site.register(models.Contributor)
+admin.site.register(models.Issue)

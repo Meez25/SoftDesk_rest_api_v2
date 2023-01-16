@@ -9,7 +9,7 @@ from rest_framework import (
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.models import Project, Contributor
+from core.models import Project, Contributor, Issue
 
 from project import serializers
 from project import permissions
@@ -53,16 +53,28 @@ class ContributorViewSet(mixins.ListModelMixin,
     """Manage contributors in the database. The queryset is filtered to only
     show contributors for the current project."""
 
+    permission_classes = [IsAuthenticated, permissions.isProjectOwner]
     serializer_class = serializers.ContributorSerializer
     queryset = Contributor.objects.all()
-    permission_classes = [IsAuthenticated, permissions.ContributorPermission]
 
     def get_queryset(self):
         """Return objects for the current authenticated user only."""
         return self.queryset.filter(project_id=self.kwargs['project_pk'])
 
-    def perform_create(self, serializer):
-        """Create a new project."""
-        if serializer.is_valid():
-            serializer.save(user_id=serializer.validated_data['user_id'],
-                            project_id=serializer.validated_data['project_id'])
+
+class IssueViewSet(mixins.ListModelMixin,
+                   mixins.CreateModelMixin,
+                   mixins.DestroyModelMixin,
+                   mixins.UpdateModelMixin,
+                   viewsets.GenericViewSet):
+    """Manage issues in the database. The queryset is filtered to only
+    show issues for the current project."""
+
+    serializer_class = serializers.IssueSerializer
+    queryset = Issue.objects.all()
+    permission_classes = [permissions.isProjectContributor, IsAuthenticated]
+
+    def get_queryset(self):
+        """Return issues for the current project only and only
+        if the user is a contributor."""
+        return self.queryset.filter(project_id=self.kwargs['project_pk'])

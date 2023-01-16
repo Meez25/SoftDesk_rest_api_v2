@@ -17,6 +17,9 @@ project_router = routers.NestedSimpleRouter(router,
 project_router.register("users",
                         views.ContributorViewSet,
                         basename='projects-users')
+project_router.register("issues",
+                        views.IssueViewSet,
+                        basename='projects-issues')
 
 
 app_name = 'project'
