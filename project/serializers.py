@@ -3,7 +3,7 @@ Serializers for the project APIs.
 """
 from rest_framework import serializers
 
-from core.models import Project, Contributor, User, Issue
+from core.models import Project, Contributor, User, Issue, Comment
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -67,3 +67,17 @@ class IssueSerializer(serializers.ModelSerializer):
                   'assignee_user_id',
                   )
         read_only_fields = ('id',)
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for comment objects."""
+    class Meta:
+        model = Comment
+        fields = ('id', 'issue_id', 'author_user_id', 'description')
+        read_only_fields = ('id',)
+
+    def validate_description(self, value):
+        """Validate the description field."""
+        if value == '':
+            raise serializers.ValidationError('Description cannot be empty.')
+        return value

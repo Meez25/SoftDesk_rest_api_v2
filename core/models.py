@@ -142,3 +142,21 @@ class Issue(models.Model):
     def __str__(self):
         """Return a string representation of the model."""
         return self.title
+
+
+class Comment(models.Model):
+    """Comment model."""
+    issue_id = models.ForeignKey(
+            'Issue',
+            on_delete=models.CASCADE,
+            )
+    author_user_id = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.CASCADE,
+            )
+    description = models.TextField()
+    created_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        """Return a string representation of the model."""
+        return self.description

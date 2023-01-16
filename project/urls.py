@@ -21,10 +21,17 @@ project_router.register("issues",
                         views.IssueViewSet,
                         basename='projects-issues')
 
+comment_router = routers.NestedSimpleRouter(project_router,
+                                            r'issues',
+                                            lookup='issue')
+comment_router.register("comments", views.CommentViewSet,
+                        basename='projects-issues-comments')
+
 
 app_name = 'project'
 
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(project_router.urls)),
+    path('', include(comment_router.urls)),
     ]

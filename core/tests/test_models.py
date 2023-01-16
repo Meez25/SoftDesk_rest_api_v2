@@ -156,3 +156,27 @@ class ModelTest(TestCase):
         self.assertEqual(issue.priority, 'test priority')
         self.assertEqual(issue.status, 'test status')
         self.assertEqual(issue.assignee_user_id, user)
+
+    def test_create_comment(self):
+        """Test creating a comment."""
+        user = create_user()
+        project = create_project(user)
+        issue = models.Issue.objects.create(
+                project_id=project,
+                author_user_id=user,
+                title='Test Issue',
+                description='Test issue description',
+                tag='test tag',
+                priority='test priority',
+                status='test status',
+                assignee_user_id=user,
+                )
+        comment = models.Comment.objects.create(
+                issue_id=issue,
+                author_user_id=user,
+                description='Test description',
+                )
+
+        self.assertEqual(comment.issue_id, issue)
+        self.assertEqual(comment.author_user_id, user)
+        self.assertEqual(comment.description, 'Test description')

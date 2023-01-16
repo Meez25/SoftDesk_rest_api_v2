@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from core.models import Project, Contributor, Issue
+from core.models import Project, Contributor, Issue, Comment
 
 from project.serializers import ProjectSerializer, ProjectDetailSerializer
 
@@ -55,6 +55,17 @@ def create_issue(project, user, **params):
                                 author_user_id=user,
                                 assignee_user_id=user,
                                 **defaults)
+
+
+def create_comment(issue, user, **params):
+    """Create a comment."""
+    defaults = {
+            'description': 'Test description',
+            }
+    defaults.update(params)
+    return Comment.objects.create(issue_id=issue,
+                                  author_user_id=user,
+                                  **defaults)
 
 
 class PublicProjectApiTests(TestCase):
@@ -347,7 +358,7 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(len(res.data['results']), 2)
         self.assertEqual(res.data['results'][0]['id'], issue.id)
 
-    def test_create_a_issue_in_project(self):
+    def test_create_an_issue_in_project(self):
         """Test to create an issue in a project."""
         project = create_project(user=self.user)
         payload = {
@@ -373,7 +384,7 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.data['author_user_id'], self.user.id)
         self.assertEqual(res.data['assignee_user_id'], self.user.id)
 
-    def test_create_a_issue_in_project_with_no_permission(self):
+    def test_create_an_issue_in_project_with_no_permission(self):
         """Test to create an issue in a project with no permission."""
         other_user = create_user(
                 email="test@example.com",
@@ -396,3 +407,149 @@ class PrivateProjectApiTests(TestCase):
         res = client2.post(url, payload)
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_an_issue(self):
+        """Test that updates an issue."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'project_id': project.id,
+                'tag': 'Test tag',
+                'status': 'Test status',
+                'priority': 'Test priority',
+                'author_user_id': self.user.id,
+                'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-detail', args=[project.id,
+                                                              issue.id])
+        res = self.client.put(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['title'], payload['title'])
+        self.assertEqual(res.data['description'], payload['description'])
+        self.assertEqual(res.data['project_id'], project.id)
+        self.assertEqual(res.data['tag'], payload['tag'])
+        self.assertEqual(res.data['status'], payload['status'])
+        self.assertEqual(res.data['priority'], payload['priority'])
+        self.assertEqual(res.data['author_user_id'], self.user.id)
+        self.assertEqual(res.data['assignee_user_id'], self.user.id)
+
+    def test_unauthorized_user_cannot_see_issue_list(self):
+        """Test that an unauthorized user cannot see the list of issues."""
+        other_user = create_user(
+                email="test@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        client2 = APIClient()
+        client2.force_authenticate(user=other_user)
+        create_issue(project=project, user=self.user)
+        create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-list', args=[project.id])
+        res = client2.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_an_issue(self):
+        """Test that deletes an issue."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-detail', args=[project.id,
+                                                              issue.id])
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Issue.objects.count(), 0)
+
+    def test_unauthorized_user_cannot_delete_an_issue(self):
+        """That that an unauthorized user cannot delete an issue."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-detail',
+                      args=[project.id, issue.id])
+        user = create_user(
+                email="test@example.com",
+                password="testpass123",
+                )
+        client2 = APIClient()
+        client2.force_authenticate(user=user)
+        res = client2.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_patch_not_possible(self):
+        """That that the patch method is not possible."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-detail',
+                      args=[project.id, issue.id])
+        payload = {
+                'title': 'patch',
+                }
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_get_detail_not_possible(self):
+        """Test that the get of the detail view is not possible."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-detail',
+                      args=[project.id, issue.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_create_comment_in_issue(self):
+        """Test that creates a comment in an issue."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-comments-list',
+                      args=[project.id, issue.id])
+        payload = {
+                'description': 'test description',
+                'author_user_id': self.user.id,
+                'issue_id': issue.id,
+                }
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['description'], payload['description'])
+        self.assertEqual(res.data['author_user_id'], self.user.id)
+        self.assertEqual(res.data['issue_id'], issue.id)
+
+    def test_unauthorized_user_cannot_comment_an_issue(self):
+        """Test that an unauthorized user cannot post a comment on an issue."""
+        other_user = create_user(
+                email="other@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-comments-list',
+                      args=[project.id, issue.id])
+        payload = {
+                'description': 'test description',
+                'author_user_id': self.user.id,
+                'issue_id': issue.id,
+                }
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+        res = other_client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_comment_list(self):
+        """Test that gets the list of comments."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        create_comment(issue=issue, user=self.user)
+        create_comment(issue=issue, user=self.user)
+        url = reverse('project:projects-issues-comments-list',
+                      args=[project.id, issue.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data["results"]), 2)
