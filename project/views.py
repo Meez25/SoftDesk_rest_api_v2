@@ -9,7 +9,7 @@ from rest_framework import (
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from core.models import Project
+from core.models import Project, Contributor
 
 from project import serializers
 from project import permissions
@@ -44,3 +44,24 @@ class ProjectViewSet(mixins.ListModelMixin,
     def partial_update(self, request, *args, **kwargs):
         """Partial update of a project is not possible."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class ContributorViewSet(mixins.ListModelMixin,
+                         mixins.CreateModelMixin,
+                         mixins.DestroyModelMixin,
+                         viewsets.GenericViewSet):
+    """Manage contributors in the database. The queryset is filtered to only
+    show contributors for the current project."""
+
+    serializer_class = serializers.ContributorSerializer
+    queryset = Contributor.objects.all()
+    permission_classes = (IsAuthenticated, permissions.IsOwnerOrReadOnly)
+
+    def get_queryset(self):
+        """Return objects for the current authenticated user only."""
+        return self.queryset.filter(project_id=self.kwargs['project_id'])
+
+    def perform_create(self, serializer):
+        """Create a new project."""
+        serializer.save(user_id=serializer.validated_data['user_id'],
+                        project_id=serializer.validated_data['project_id'])

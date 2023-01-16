@@ -66,3 +66,35 @@ class Project(models.Model):
     def __str__(self):
         """Return a string representation of the model."""
         return self.title
+
+
+class Contributor(models.Model):
+    """Contributor model."""
+    CONTRIBUTOR = "CTR"
+    OWNER = "OWN"
+    PERMISSION_CHOICES = [
+        (CONTRIBUTOR, 'Contributor'),
+        (OWNER, 'Owner'),
+    ]
+    project_id = models.ForeignKey(
+            'Project',
+            on_delete=models.SET_NULL,
+            null=True,
+            )
+    user_id = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.SET_NULL,
+            null=True,
+            )
+    permission = models.CharField(max_length=255,
+                                  choices=PERMISSION_CHOICES,
+                                  default=CONTRIBUTOR,
+                                  )
+    role = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        unique_together = ('project_id', 'user_id',)
+
+    def __str__(self):
+        """Return a string representation of the model."""
+        return self.user_id.email

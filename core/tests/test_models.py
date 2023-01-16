@@ -3,6 +3,7 @@ Tests for models.
 """
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.db.utils import IntegrityError
 
 from core import models
 
@@ -10,6 +11,17 @@ from core import models
 def create_user(email='user@example.com', password='testpass'):
     """Create a sample user."""
     return get_user_model().objects.create_user(email, password)
+
+
+def create_project(author_user_id,
+                   title='Test project',
+                   description='Test description',
+                   type='Test type'):
+    """Create a sample project."""
+    return models.Project.objects.create(author_user_id=author_user_id,
+                                         title=title,
+                                         description=description,
+                                         type=type)
 
 
 class ModelTest(TestCase):
@@ -74,3 +86,54 @@ class ModelTest(TestCase):
         self.assertEqual(project.description, 'Test project description')
         self.assertEqual(project.type, 'test')
         self.assertEqual(project.author_user_id, user)
+
+    def test_create_contributor(self):
+        """Test creating a contributor."""
+        user = create_user()
+        project = create_project(user)
+        contributor = models.Contributor.objects.create(
+                project_id=project,
+                user_id=user,
+                permission='contributor',
+                role='developer',
+                )
+
+        self.assertEqual(contributor.project_id, project)
+        self.assertEqual(contributor.user_id, user)
+        self.assertEqual(contributor.permission, 'contributor')
+        self.assertEqual(contributor.role, 'developer')
+
+    def test_forbid_duplicate_contributors(self):
+        """Test that a contributor cannot be added twice."""
+        user = create_user()
+        project = create_project(user)
+        models.Contributor.objects.create(
+                project_id=project,
+                user_id=user,
+                permission='contributor',
+                role='developer',
+                )
+        with self.assertRaises(IntegrityError):
+            models.Contributor.objects.create(
+                    project_id=project,
+                    user_id=user,
+                    permission='contributor',
+                    role='developer',
+                    )
+
+    def test_project_author_is_owner_contributor(self):
+        """Test that the project author is
+        automatically added as a contributor"""
+        user = create_user()
+        project = create_project(user)
+        contributor = models.Contributor.objects.create(
+                project_id=project,
+                user_id=user,
+                permission='owner',
+                role='developer',
+                )
+
+        self.assertEqual(contributor.project_id, project)
+        self.assertEqual(contributor.user_id, user)
+        self.assertEqual(contributor.permission, 'owner')
+        self.assertEqual(contributor.role, 'developer')

@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from core.models import Project
+from core.models import Project, Contributor
 
 from project.serializers import ProjectSerializer, ProjectDetailSerializer
 
@@ -18,6 +18,11 @@ PROJECTS_URL = reverse('project:project-list')
 def detail_url(project_id):
     """Return project detail URL."""
     return reverse('project:project-detail', args=[project_id])
+
+
+def users_detail_url(user_id):
+    """Return user detail URL."""
+    return reverse('project:users:users-detail', args=[user_id])
 
 
 def create_project(user, **params):
@@ -151,3 +156,37 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(Project.objects.count(), 1)
+
+    def test_create_contributor(self):
+        """Test creating a contributor."""
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        project = create_project(user=self.user)
+        payload = {
+                'project_id': project.id,
+                'user_id': other_user.id,
+                'role': 'Test role',
+                'permission': 'CTR',
+                }
+        res = self.client.post(reverse('project:projects-users-list',
+                                       args=[project.id]),
+                               payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        contributor = Contributor.objects.get(id=res.data['id'])
+        self.assertEqual(contributor.project_id, project)
+        self.assertEqual(contributor.user_id, other_user)
+        self.assertEqual(contributor.role, payload['role'])
+        self.assertEqual(contributor.permission, payload['permission'])
+
+    def test_delete_contributor(self):
+        pass
+
+    def test_retrieve_contributors(self):
+        pass
+
+    def test_forbid_contributor_detail(self):
+        pass
+
