@@ -29,12 +29,8 @@ class ProjectViewSet(mixins.ListModelMixin,
         - android (for Android)."""
 
     permission_classes = (IsAuthenticated, permissions.IsOwnerOrReadOnly)
-    queryset = Project.objects.all()
     serializer_class = serializers.ProjectDetailSerializer
-
-    def get_queryset(self):
-        """Return objects for the current authenticated user only."""
-        return self.queryset.all().order_by('-id')
+    queryset = Project.objects.all().order_by('-id')
 
     def get_serializer_class(self):
         """Return appropriate serializer class."""
@@ -64,11 +60,10 @@ class ContributorViewSet(mixins.ListModelMixin,
 
     permission_classes = [IsAuthenticated, permissions.IsProjectOwner]
     serializer_class = serializers.ContributorSerializer
-    queryset = Contributor.objects.all()
 
     def get_queryset(self):
-        """Return objects for the current authenticated user only."""
-        return self.queryset.filter(project_id=self.kwargs['project_pk'])
+        """Return objecturrent authenticated user only."""
+        return Contributor.objects.filter(project_id=self.kwargs['project_pk'])
 
 
 class IssueViewSet(mixins.ListModelMixin,
@@ -96,14 +91,13 @@ class IssueViewSet(mixins.ListModelMixin,
     """
 
     serializer_class = serializers.IssueSerializer
-    queryset = Issue.objects.all()
     permission_classes = [permissions.IsProjectContributor, IsAuthenticated,
                           permissions.IsOwnerOrReadOnly]
 
     def get_queryset(self):
         """Return issues for the current project only and only
         if the user is a contributor."""
-        return self.queryset.filter(project_id=self.kwargs['project_pk'])
+        return Issue.objects.filter(project_id=self.kwargs['project_pk'])
 
     def partial_update(self, request, *args, **kwargs):
         """Partial update of an issue is not possible."""
@@ -127,9 +121,12 @@ class CommentViewSet(mixins.ListModelMixin,
     show comments for the current issue."""
 
     serializer_class = serializers.CommentSerializer
-    queryset = Comment.objects.all()
     permission_classes = [permissions.IsProjectContributor, IsAuthenticated,
                           permissions.IsOwnerOrReadOnly]
+
+    def get_queryset(self):
+        """Filter queryset for current issue."""
+        return Comment.objects.filter(issue_id=self.kwargs['issue_pk'])
 
     def partial_update(self, request, *args, **kwargs):
         """Partial update of an issue is not possible."""
@@ -137,4 +134,7 @@ class CommentViewSet(mixins.ListModelMixin,
 
     def perform_create(self, serializer):
         """Create a new project."""
-        serializer.save(author_user_id=self.request.user)
+        issue_id = self.kwargs['issue_pk']
+        issue = Issue.objects.get(id=issue_id)
+        serializer.save(author_user_id=self.request.user,
+                        issue_id=issue)

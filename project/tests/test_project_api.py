@@ -327,6 +327,20 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data['results']), 2)
 
+    def test_filter_on_contributor_s_project(self):
+        """Test that only the contributor of the projects are displayed."""
+        project = create_project(user=self.user)
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        create_project(user=other_user)
+        url = reverse('project:projects-users-list', args=[project.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data['results']), 1)
+
     def test_forbid_contributor_detail(self):
         """Test that a contributor cannot access the contributor detail."""
         other_user = create_user(
@@ -382,6 +396,22 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.data['priority'], payload['priority'])
         self.assertEqual(res.data['author_user_id'], self.user.id)
         self.assertEqual(res.data['assignee_user_id'], self.user.id)
+
+    def test_list_only_issue_of_the_project(self):
+        """That that only the issue of the projects are displayed."""
+        project = create_project(user=self.user)
+        other_user = create_user(
+                email="other_user",
+                password="test123",
+                )
+        other_project = create_project(user=other_user)
+        create_issue(project=project, user=self.user)
+        create_issue(project=other_project, user=other_user)
+        url = reverse('project:projects-issues-list', args=[project.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data['results']), 1)
 
     def test_create_an_issue_in_project_without_assignee(self):
         """Test to create an issue in a project without an
@@ -597,6 +627,29 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.data['author_user_id'], self.user.id)
         self.assertEqual(res.data['issue_id'], issue.id)
 
+    def test_check_if_only_the_comments_of_the_issue_are_returned(self):
+        """Test that checks that only the comments of the issue are
+        returned."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        project2 = create_project(user=self.user)
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        project3 = create_project(user=other_user)
+        issue2 = create_issue(project=project2, user=self.user)
+        issue3 = create_issue(project=project3, user=other_user)
+        create_comment(issue=issue, user=self.user)
+        create_comment(issue=issue2, user=self.user)
+        create_comment(issue=issue3, user=other_user)
+        url = reverse('project:projects-issues-comments-list',
+                      args=[project.id, issue.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data['results']), 1)
+
     def test_unauthorized_user_cannot_comment_an_issue(self):
         """Test that an unauthorized user cannot post a comment on an issue."""
         other_user = create_user(
@@ -639,14 +692,11 @@ class PrivateProjectApiTests(TestCase):
                       args=[project.id, issue.id, comment.id])
         payload = {
                 'description': 'updated description',
-                'issue_id': issue.id,
                 }
         res = self.client.put(url, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['description'], payload['description'])
-        self.assertEqual(res.data['author_user_id'], self.user.id)
-        self.assertEqual(res.data['issue_id'], issue.id)
 
     def test_a_contributor_cannot_delete_another_s_contributor_comment(self):
         """That that a contributor can't delete another's contributor

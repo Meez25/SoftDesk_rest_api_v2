@@ -9,7 +9,7 @@ from project import views
 
 
 router = routers.SimpleRouter()
-router.register('projects', views.ProjectViewSet)
+router.register('projects', views.ProjectViewSet, basename='project')
 
 project_router = routers.NestedSimpleRouter(router,
                                             'projects',
