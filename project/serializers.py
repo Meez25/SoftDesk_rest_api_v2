@@ -66,7 +66,19 @@ class IssueSerializer(serializers.ModelSerializer):
                   'created_time',
                   'assignee_user_id',
                   )
-        read_only_fields = ('id',)
+        read_only_fields = ('id', 'created_time', 'author_user_id')
+
+    def validate_assignee_user_id(self, value):
+        """Verify that the assignee_user_id is a contributor of the project."""
+        project_id = self.context['request'].data['project_id']
+        if Contributor.objects.filter(
+                project_id=project_id,
+                user_id=value,
+                ).count() == 0:
+            raise serializers.ValidationError(
+                    'Assignee must be a contributor of the project.'
+                    )
+        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -74,7 +86,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ('id', 'issue_id', 'author_user_id', 'description')
-        read_only_fields = ('id',)
+        read_only_fields = ('id', 'author_user_id')
 
     def validate_description(self, value):
         """Validate the description field."""

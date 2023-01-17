@@ -142,13 +142,7 @@ REST_FRAMEWORK = {
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     }
 
-JWT_AUTH = {
-    'JWT_VERIFY': True,
-
-    'JWT_VERIFY_EXPIRATION': True,
-
-    # ''JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=3000),
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=300000),
-
-    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
     }

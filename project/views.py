@@ -21,7 +21,12 @@ class ProjectViewSet(mixins.ListModelMixin,
                      mixins.UpdateModelMixin,
                      mixins.DestroyModelMixin,
                      viewsets.GenericViewSet):
-    """Manage projects in the database."""
+    """Manage projects in the database.
+    The possible values for the type are :
+        - back (for Back-end)
+        - front (for Front-end)
+        - iOS (for iOS)
+        - android (for Android)."""
 
     permission_classes = (IsAuthenticated, permissions.IsOwnerOrReadOnly)
     queryset = Project.objects.all()
@@ -51,9 +56,13 @@ class ContributorViewSet(mixins.ListModelMixin,
                          mixins.DestroyModelMixin,
                          viewsets.GenericViewSet):
     """Manage contributors in the database. The queryset is filtered to only
-    show contributors for the current project."""
+    show contributors for the current project.
+    The possible values for the permission are :
+        - CTR (for Contributor)
+        - OWN (for Owner).
+    """
 
-    permission_classes = [IsAuthenticated, permissions.isProjectOwner]
+    permission_classes = [IsAuthenticated, permissions.IsProjectOwner]
     serializer_class = serializers.ContributorSerializer
     queryset = Contributor.objects.all()
 
@@ -68,11 +77,28 @@ class IssueViewSet(mixins.ListModelMixin,
                    mixins.UpdateModelMixin,
                    viewsets.GenericViewSet):
     """Manage issues in the database. The queryset is filtered to only
-    show issues for the current project."""
+    show issues for the current project.
+
+    The possible values for the status are :
+        - todo (for A faire)
+        - in_progress (for En cours)
+        - done (for Terminé).
+
+    The possible values for the priority are :
+        - low (for Faible)
+        - medium (for Moyenne)
+        - high (for Haute)
+
+    The possible values for the tag are :
+        - bug (for Bug)
+        - improvement (for Amélioration)
+        - task (for Tâche)
+    """
 
     serializer_class = serializers.IssueSerializer
     queryset = Issue.objects.all()
-    permission_classes = [permissions.isProjectContributor, IsAuthenticated]
+    permission_classes = [permissions.IsProjectContributor, IsAuthenticated,
+                          permissions.IsOwnerOrReadOnly]
 
     def get_queryset(self):
         """Return issues for the current project only and only
@@ -82,6 +108,13 @@ class IssueViewSet(mixins.ListModelMixin,
     def partial_update(self, request, *args, **kwargs):
         """Partial update of an issue is not possible."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def perform_create(self, serializer):
+        """Create a new issue."""
+        if not self.request.data.get('assignee_user_id'):
+            serializer.save(author_user_id=self.request.user,
+                            assignee_user_id=self.request.user)
+        serializer.save(author_user_id=self.request.user)
 
 
 class CommentViewSet(mixins.ListModelMixin,
@@ -95,8 +128,13 @@ class CommentViewSet(mixins.ListModelMixin,
 
     serializer_class = serializers.CommentSerializer
     queryset = Comment.objects.all()
-    permission_classes = [permissions.isProjectContributor, IsAuthenticated]
+    permission_classes = [permissions.IsProjectContributor, IsAuthenticated,
+                          permissions.IsOwnerOrReadOnly]
 
     def partial_update(self, request, *args, **kwargs):
         """Partial update of an issue is not possible."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def perform_create(self, serializer):
+        """Create a new project."""
+        serializer.save(author_user_id=self.request.user)

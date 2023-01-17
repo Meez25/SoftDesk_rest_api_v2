@@ -152,7 +152,7 @@ class PrivateProjectApiTests(TestCase):
         payload = {
                 'title': 'Test project',
                 'description': 'Test description',
-                'type': 'Test type',
+                'type': 'front',
                 }
         res = self.client.post(PROJECTS_URL, payload)
 
@@ -365,11 +365,35 @@ class PrivateProjectApiTests(TestCase):
                 'title': 'Test issue',
                 'description': 'Test description',
                 'project_id': project.id,
-                'tag': 'Test tag',
-                'status': 'Test status',
-                'priority': 'Test priority',
-                'author_user_id': self.user.id,
+                'tag': 'bug',
+                'status': 'finished',
+                'priority': 'high',
                 'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-list', args=[project.id])
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['title'], payload['title'])
+        self.assertEqual(res.data['description'], payload['description'])
+        self.assertEqual(res.data['project_id'], project.id)
+        self.assertEqual(res.data['tag'], payload['tag'])
+        self.assertEqual(res.data['status'], payload['status'])
+        self.assertEqual(res.data['priority'], payload['priority'])
+        self.assertEqual(res.data['author_user_id'], self.user.id)
+        self.assertEqual(res.data['assignee_user_id'], self.user.id)
+
+    def test_create_an_issue_in_project_without_assignee(self):
+        """Test to create an issue in a project without an
+        explicit assignee."""
+        project = create_project(user=self.user)
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'project_id': project.id,
+                'tag': 'bug',
+                'status': 'finished',
+                'priority': 'high',
                 }
         url = reverse('project:projects-issues-list', args=[project.id])
         res = self.client.post(url, payload)
@@ -400,11 +424,25 @@ class PrivateProjectApiTests(TestCase):
                 'tag': 'Test tag',
                 'status': 'Test status',
                 'priority': 'Test priority',
-                'author_user_id': self.user.id,
                 'assignee_user_id': self.user.id,
                 }
         url = reverse('project:projects-issues-list', args=[project.id])
         res = client2.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_see_issue_in_a_project_without_being_contributor(self):
+        """Test that a user that is not a contributor cannot see
+        issues in the project."""
+        project = create_project(user=self.user)
+        other_user = create_user(
+                email="test@example.com",
+                password="testpass123",
+                )
+        url = reverse('project:projects-issues-list', args=[project.id])
+        client2 = APIClient()
+        client2.force_authenticate(user=other_user)
+        res = client2.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -416,10 +454,9 @@ class PrivateProjectApiTests(TestCase):
                 'title': 'Test issue',
                 'description': 'Test description',
                 'project_id': project.id,
-                'tag': 'Test tag',
-                'status': 'Test status',
-                'priority': 'Test priority',
-                'author_user_id': self.user.id,
+                'tag': 'improvement',
+                'status': 'in progress',
+                'priority': 'low',
                 'assignee_user_id': self.user.id,
                 }
         url = reverse('project:projects-issues-detail', args=[project.id,
@@ -479,6 +516,47 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_only_issue_author_can_modify_it(self):
+        """Test that only the author is an issue can modify it."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        other_user = create_user(
+                email="test@example.com",
+                password="testpass123",
+                )
+        client2 = APIClient()
+        client2.force_authenticate(user=other_user)
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'project_id': project.id,
+                'tag': 'Test tag',
+                'status': 'Test status',
+                'priority': 'Test priority',
+                'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-detail', args=[project.id,
+                                                              issue.id])
+        res = client2.put(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_only_issue_author_can_delete_it(self):
+        """Test that only the author is an issue can modify it."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        other_user = create_user(
+                email="test@example.com",
+                password="testpass123",
+                )
+        client2 = APIClient()
+        client2.force_authenticate(user=other_user)
+        url = reverse('project:projects-issues-detail', args=[project.id,
+                                                              issue.id])
+        res = client2.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_patch_not_possible(self):
         """That that the patch method is not possible."""
         project = create_project(user=self.user)
@@ -510,7 +588,6 @@ class PrivateProjectApiTests(TestCase):
                       args=[project.id, issue.id])
         payload = {
                 'description': 'test description',
-                'author_user_id': self.user.id,
                 'issue_id': issue.id,
                 }
         res = self.client.post(url, payload)
@@ -532,7 +609,6 @@ class PrivateProjectApiTests(TestCase):
                       args=[project.id, issue.id])
         payload = {
                 'description': 'test description',
-                'author_user_id': self.user.id,
                 'issue_id': issue.id,
                 }
         other_client = APIClient()
@@ -553,3 +629,37 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data["results"]), 2)
+
+    def test_modify_a_comment(self):
+        """That that modifies a comment."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        comment = create_comment(issue=issue, user=self.user)
+        url = reverse('project:projects-issues-comments-detail',
+                      args=[project.id, issue.id, comment.id])
+        payload = {
+                'description': 'updated description',
+                'issue_id': issue.id,
+                }
+        res = self.client.put(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['description'], payload['description'])
+        self.assertEqual(res.data['author_user_id'], self.user.id)
+        self.assertEqual(res.data['issue_id'], issue.id)
+
+    def test_a_contributor_cannot_delete_another_s_contributor_comment(self):
+        """That that a contributor can't delete another's contributor
+        comment."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        other_comment = create_comment(issue=issue, user=other_user)
+        url = reverse('project:projects-issues-comments-detail',
+                      args=[project.id, issue.id, other_comment.id])
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)

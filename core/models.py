@@ -54,14 +54,20 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Project(models.Model):
     """Project model."""
+    TYPES_CHOICES = [
+        ("back", 'Back-end'),
+        ("front", 'Front-end'),
+        ("iOS", 'iOS'),
+        ("android", 'Android'),
+    ]
     author_user_id = models.ForeignKey(
             settings.AUTH_USER_MODEL,
             on_delete=models.SET_NULL,
             null=True,
             )
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    type = models.CharField(max_length=255)
+    description = models.TextField()
+    type = models.CharField(max_length=255, choices=TYPES_CHOICES)
 
     def __str__(self):
         """Return a string representation of the model."""
@@ -115,16 +121,31 @@ class Contributor(models.Model):
 
 class Issue(models.Model):
     """Issue model."""
+    PRIORITY_CHOICES = [
+        ("low", 'Faible'),
+        ("medium", 'Moyenne'),
+        ("high", 'Haute'),
+    ]
+    TAG_CHOICES = [
+        ("bug", 'Bug'),
+        ("improvement", 'Amélioration'),
+        ("task", 'Tâche'),
+    ]
+    STATUS_CHOICES = [
+        ("todo", 'A faire'),
+        ("in progress", 'En cours'),
+        ("finished", 'Terminé'),
+    ]
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    tag = models.CharField(max_length=255, blank=True)
+    tag = models.CharField(max_length=255, choices=TAG_CHOICES)
     project_id = models.ForeignKey(
             'Project',
             on_delete=models.CASCADE,
             )
-    priority = models.CharField(max_length=255, blank=True)
-    status = models.CharField(max_length=255, blank=True)
+    priority = models.CharField(max_length=255, choices=PRIORITY_CHOICES)
+    status = models.CharField(max_length=255, choices=STATUS_CHOICES)
     author_user_id = models.ForeignKey(
             settings.AUTH_USER_MODEL,
             on_delete=models.SET_NULL,
