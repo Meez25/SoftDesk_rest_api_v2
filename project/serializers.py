@@ -36,7 +36,7 @@ class ContributorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contributor
         fields = ('id', 'project_id', 'user_id', 'permission', 'role')
-        read_only_fields = ('id',)
+        read_only_fields = ('id', 'project_id')
 
     def validate_permission(self, value):
         """Validate the permission field."""
@@ -49,6 +49,16 @@ class ContributorSerializer(serializers.ModelSerializer):
                     '{}'.format(', '.join(possible_permissions))
                     )
         return value
+
+    def validate(self, data):
+        """Validate the data."""
+        project = self.context['project']
+        if Project.objects.filter(id=project.id).count() == 0:
+            raise serializers.ValidationError(
+                    'Project does not exist.'
+                    )
+        data.update({'project_id': project})
+        return data
 
 
 class IssueSerializer(serializers.ModelSerializer):

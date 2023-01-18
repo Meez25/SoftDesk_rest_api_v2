@@ -65,6 +65,12 @@ class ContributorViewSet(mixins.ListModelMixin,
         """Return objecturrent authenticated user only."""
         return Contributor.objects.filter(project_id=self.kwargs['project_pk'])
 
+    def get_serializer_context(self):
+        """Add the projet to the serializer context."""
+        context = super().get_serializer_context()
+        context['project'] = Project.objects.get(id=self.kwargs['project_pk'])
+        return context
+
 
 class IssueViewSet(mixins.ListModelMixin,
                    mixins.CreateModelMixin,
@@ -76,7 +82,7 @@ class IssueViewSet(mixins.ListModelMixin,
 
     The possible values for the status are :
         - todo (for A faire)
-        - in_progress (for En cours)
+        - in progress (for En cours)
         - done (for Terminé).
 
     The possible values for the priority are :
