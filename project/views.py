@@ -103,11 +103,16 @@ class IssueViewSet(mixins.ListModelMixin,
         """Partial update of an issue is not possible."""
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    def get_serializer_context(self):
+        """Add the project to the serializer context."""
+        context = super().get_serializer_context()
+        context['project'] = Project.objects.get(id=self.kwargs['project_pk'])
+        context['assignee_user_id'] = self.request.data.get(
+            'assignee_user_id')
+        return context
+
     def perform_create(self, serializer):
         """Create a new issue."""
-        if not self.request.data.get('assignee_user_id'):
-            serializer.save(author_user_id=self.request.user,
-                            assignee_user_id=self.request.user)
         serializer.save(author_user_id=self.request.user)
 
 

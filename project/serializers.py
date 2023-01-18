@@ -66,19 +66,40 @@ class IssueSerializer(serializers.ModelSerializer):
                   'created_time',
                   'assignee_user_id',
                   )
-        read_only_fields = ('id', 'created_time', 'author_user_id')
+        read_only_fields = ('id',
+                            'created_time',
+                            'author_user_id',
+                            'project_id',)
 
-    def validate_assignee_user_id(self, value):
-        """Verify that the assignee_user_id is a contributor of the project."""
-        project_id = self.context['request'].data['project_id']
-        if Contributor.objects.filter(
-                project_id=project_id,
-                user_id=value,
-                ).count() == 0:
+    def validate_project_id(self, value):
+        """Validate the project id."""
+        if Project.objects.filter(id=value).count() == 0:
             raise serializers.ValidationError(
-                    'Assignee must be a contributor of the project.'
+                    'Project does not exist.'
                     )
         return value
+
+    def validate(self, data):
+        """Validate the data."""
+        project = self.context['project']
+        assignee_user_id = self.context['assignee_user_id']
+        if assignee_user_id is not None:
+            if Contributor.objects.filter(
+                    user_id=assignee_user_id,
+                    project_id=project,
+                    ).count() == 0:
+                raise serializers.ValidationError(
+                        'Assignee is not a contributor of the project.'
+                        )
+            else:
+                assignee_user_id = User.objects.get(
+                        id=assignee_user_id,
+                        )
+        else:
+            assignee_user_id = self.context['request'].user
+        data.update({'project_id': project})
+        data.update({'assignee_user_id': assignee_user_id})
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):

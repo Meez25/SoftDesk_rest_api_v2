@@ -378,7 +378,6 @@ class PrivateProjectApiTests(TestCase):
         payload = {
                 'title': 'Test issue',
                 'description': 'Test description',
-                'project_id': project.id,
                 'tag': 'bug',
                 'status': 'finished',
                 'priority': 'high',
@@ -420,7 +419,6 @@ class PrivateProjectApiTests(TestCase):
         payload = {
                 'title': 'Test issue',
                 'description': 'Test description',
-                'project_id': project.id,
                 'tag': 'bug',
                 'status': 'finished',
                 'priority': 'high',
@@ -450,7 +448,6 @@ class PrivateProjectApiTests(TestCase):
         payload = {
                 'title': 'Test issue',
                 'description': 'Test description',
-                'project_id': project.id,
                 'tag': 'Test tag',
                 'status': 'Test status',
                 'priority': 'Test priority',
@@ -483,7 +480,6 @@ class PrivateProjectApiTests(TestCase):
         payload = {
                 'title': 'Test issue',
                 'description': 'Test description',
-                'project_id': project.id,
                 'tag': 'improvement',
                 'status': 'in progress',
                 'priority': 'low',
@@ -559,7 +555,6 @@ class PrivateProjectApiTests(TestCase):
         payload = {
                 'title': 'Test issue',
                 'description': 'Test description',
-                'project_id': project.id,
                 'tag': 'Test tag',
                 'status': 'Test status',
                 'priority': 'Test priority',
