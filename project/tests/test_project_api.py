@@ -147,6 +147,13 @@ class PrivateProjectApiTests(TestCase):
         serializer = ProjectDetailSerializer(project)
         self.assertEqual(res.data, serializer.data)
 
+    def test_get_project_with_bad_id(self):
+        """Test that getting a project with a bad id returns an error."""
+        url = detail_url(100)
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_create_project(self):
         """Test creating a project."""
         payload = {
@@ -187,6 +194,13 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Project.objects.count(), 0)
+
+    def test_delete_project_with_bad_id(self):
+        """Test that should return a 404."""
+        url = detail_url(100)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_partial_update_is_impossible(self):
         """That that the patch method is not allowed."""
@@ -282,6 +296,21 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Contributor.objects.count(), 1)
+
+    def test_delete_unexisting_contributor_returns_an_error(self):
+        """That that return an unexisting contributor returns an error."""
+        project = create_project(user=self.user)
+        url = reverse('project:projects-users-detail', args=[project.id, 100])
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_a_contributor_in_an_unexisting_project_return_404(self):
+        """That that return an unexisting contributor returns an error."""
+        url = reverse('project:projects-users-detail', args=[100, 100])
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_contributor_by_contributor_not_allowed(self):
         """Test that a contributor cannot delete another contributor."""
@@ -411,6 +440,15 @@ class PrivateProjectApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data['results']), 1)
+
+    def test_404_when_deleting_an_issue_that_doesnt_exist(self):
+        """That that a 404 is raised when a bad issue id is used."""
+        project = create_project(user=self.user)
+        url = reverse('project:projects-issues-detail', args=[project.id,
+                                                              100])
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_an_issue_in_project_without_assignee(self):
         """Test to create an issue in a project without an
@@ -708,3 +746,25 @@ class PrivateProjectApiTests(TestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_comment_detail(self):
+        """Test that it is possible to get the comment detail."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        comment = create_comment(issue=issue, user=self.user)
+        url = reverse('project:projects-issues-comments-detail',
+                      args=[project.id, issue.id, comment.id])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['description'], comment.description)
+
+    def test_get_comment_detail_that_doesnt_exist_raise_404(self):
+        """Test that return 404 when a comment doesn't exist."""
+        project = create_project(user=self.user)
+        issue = create_issue(project=project, user=self.user)
+        url = reverse('project:projects-issues-comments-detail',
+                      args=[project.id, issue.id, 100])
+        res = self.client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
