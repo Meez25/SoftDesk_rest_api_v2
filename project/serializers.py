@@ -81,14 +81,6 @@ class IssueSerializer(serializers.ModelSerializer):
                             'author_user_id',
                             'project_id',)
 
-    def validate_project_id(self, value):
-        """Validate the project id."""
-        if Project.objects.filter(id=value).count() == 0:
-            raise serializers.ValidationError(
-                    'Project does not exist.'
-                    )
-        return value
-
     def validate(self, data):
         """Validate the data."""
         project = self.context['project']
