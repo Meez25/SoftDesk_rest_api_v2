@@ -108,8 +108,9 @@ class CommentSerializer(serializers.ModelSerializer):
     """Serializer for comment objects."""
     class Meta:
         model = Comment
-        fields = ('id', 'issue_id', 'author_user_id', 'description')
-        read_only_fields = ('id', 'author_user_id', 'issue_id')
+        fields = ('id', 'issue_id', 'author_user_id', 'description',
+                  'created_time')
+        read_only_fields = ('id', 'author_user_id', 'issue_id', 'created_time')
 
     def validate_description(self, value):
         """Validate the description field."""
