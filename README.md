@@ -38,4 +38,4 @@ With the admin account, you can go to http://127.0.0.1:8000/admin to log in as
 the admin
 
 Then, all the endpoints are documented here :
-https://documenter.getpostman.com/view/2s8ZDVajFy?version=latest#bd752644-7a46-49ec-a368-5eb2ab4c2a81
+https://documenter.getpostman.com/view/2s8ZDVajFy?version=latest
