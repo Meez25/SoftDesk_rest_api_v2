@@ -425,6 +425,57 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.data['author_user_id'], self.user.id)
         self.assertEqual(res.data['assignee_user_id'], self.user.id)
 
+    def test_create_issue_with_wrong_tag(self):
+        """Test that creates an issue with wrong tag should return an
+        error."""
+        project = create_project(user=self.user)
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'tag': 'wrong',
+                'status': 'finished',
+                'priority': 'high',
+                'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-list', args=[project.id])
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_issue_with_wrong_status(self):
+        """Test that creates an issue with wrong status should return an
+        error."""
+        project = create_project(user=self.user)
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'tag': 'bug',
+                'status': 'wrong',
+                'priority': 'high',
+                'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-list', args=[project.id])
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_issue_with_wrong_priority(self):
+        """Test that creates an issue with wrong priority should return an
+        error."""
+        project = create_project(user=self.user)
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'tag': 'bug',
+                'status': 'finished',
+                'priority': 'wrong',
+                'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-list', args=[project.id])
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_list_only_issue_of_the_project(self):
         """That that only the issue of the projects are displayed."""
         project = create_project(user=self.user)
