@@ -41,6 +41,15 @@ def create_user(**params):
     return get_user_model().objects.create_user(**params)
 
 
+def create_contributor(user):
+    """Create a contributor in the project."""
+    return Contributor.objects.create(
+                user_id=user,
+                role='Test role',
+                permission='CTR',
+                )
+
+
 def create_issue(project, user, **params):
     """Create and return a new issue."""
     defaults = {
@@ -269,6 +278,39 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(Contributor.objects.count(), 1)
 
+    def test_create_bad_contributor_with_bad_project_id(self):
+        """Test creating a bad contributor raises an error."""
+        other_user = create_user(
+                email="other_user@example.com",
+                password="testpass123",
+                )
+        payload = {
+                'user_id': other_user.id,
+                'role': 'Test role',
+                'permission': 'CTR',
+                }
+        res = self.client.post(reverse('project:projects-users-list',
+                                       args=[200]),
+                               payload)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Contributor.objects.count(), 0)
+
+    def test_create_bad_contributor_with_bad_user_id(self):
+        """Test creating a bad contributor raises an error."""
+        project = create_project(user=self.user)
+        payload = {
+                'user_id': 200,
+                'role': 'Test role',
+                'permission': 'CTR',
+                }
+        res = self.client.post(reverse('project:projects-users-list',
+                                       args=[project.id]),
+                               payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Contributor.objects.count(), 1)
+
     def test_create_contributor_when_project_is_created(self):
         """That that the author of the project is set as a contributor."""
         project = create_project(user=self.user)
@@ -276,6 +318,21 @@ class PrivateProjectApiTests(TestCase):
                                                  user_id=self.user)
         self.assertTrue(contributor.exists())
         self.assertEqual(len(contributor), 1)
+
+    def test_a_contributor_cannot_delete_a_project(self):
+        """Test that a simple contributor cannot delete a project's he's in."""
+        project = create_project(user=self.user)
+        other_user = create_user(
+                email="other@example.com",
+                password="testpass123",
+                )
+        create_contributor(other_user)
+        client2 = APIClient()
+        client2.force_authenticate(user=other_user)
+        url = detail_url(project.id)
+        res = client2.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_contributor(self):
         """Test that test the deletion of a contributor."""
@@ -424,6 +481,21 @@ class PrivateProjectApiTests(TestCase):
         self.assertEqual(res.data['priority'], payload['priority'])
         self.assertEqual(res.data['author_user_id'], self.user.id)
         self.assertEqual(res.data['assignee_user_id'], self.user.id)
+
+    def test_create_an_issue_in_a_unexisting_project(self):
+        """Test to create an issue in a project."""
+        payload = {
+                'title': 'Test issue',
+                'description': 'Test description',
+                'tag': 'bug',
+                'status': 'finished',
+                'priority': 'high',
+                'assignee_user_id': self.user.id,
+                }
+        url = reverse('project:projects-issues-list', args=[100])
+        res = self.client.post(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_issue_with_wrong_tag(self):
         """Test that creates an issue with wrong tag should return an

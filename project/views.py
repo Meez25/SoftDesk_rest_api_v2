@@ -68,8 +68,17 @@ class ContributorViewSet(mixins.ListModelMixin,
     def get_serializer_context(self):
         """Add the projet to the serializer context."""
         context = super().get_serializer_context()
-        context['project'] = Project.objects.get(id=self.kwargs['project_pk'])
+        context['project'] = Project.objects.get(
+                        id=self.kwargs['project_pk'])
         return context
+
+    def create(self, request, *args, **kwargs):
+        """Create a contributor and make sure the project exists."""
+        try:
+            Project.objects.get(id=self.kwargs['project_pk'])
+        except Project.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return super().create(request, *args, **kwargs)
 
 
 class IssueViewSet(mixins.ListModelMixin,
