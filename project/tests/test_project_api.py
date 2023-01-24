@@ -41,10 +41,11 @@ def create_user(**params):
     return get_user_model().objects.create_user(**params)
 
 
-def create_contributor(user):
+def create_contributor(user, project):
     """Create a contributor in the project."""
     return Contributor.objects.create(
                 user_id=user,
+                project_id=project,
                 role='Test role',
                 permission='CTR',
                 )
@@ -231,8 +232,37 @@ class PrivateProjectApiTests(TestCase):
         url = detail_url(project.id)
         res = self.client.delete(url)
 
-        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Project.objects.count(), 1)
+
+    def test_a_new_user_cannot_see_any_project(self):
+        """Test that a new user cannot see any project."""
+        other_user = create_user(
+                email="otheruser@example.com",
+                password="testpass123",
+                )
+        other_client = APIClient()
+        other_client.force_login(other_user)
+        project = create_project(user=self.user)
+        res = other_client.get(PROJECTS_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['results'], [])
+        self.assertNotIn(project, res.data['results'])
+
+    def test_a_new_user_cannot_see_a_particular_project(self):
+        """Test that a new user cannot see a project detail."""
+        other_user = create_user(
+                email="otheruser@example.com",
+                password="testpass123",
+                )
+        other_client = APIClient()
+        other_client.force_login(other_user)
+        project = create_project(user=self.user)
+        url = detail_url(project.id)
+        res = other_client.get(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_contributor(self):
         """Test creating a contributor."""
@@ -326,7 +356,7 @@ class PrivateProjectApiTests(TestCase):
                 email="other@example.com",
                 password="testpass123",
                 )
-        create_contributor(other_user)
+        create_contributor(other_user, project)
         client2 = APIClient()
         client2.force_authenticate(user=other_user)
         url = detail_url(project.id)

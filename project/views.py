@@ -30,7 +30,12 @@ class ProjectViewSet(mixins.ListModelMixin,
 
     permission_classes = (IsAuthenticated, permissions.IsOwnerOrReadOnly)
     serializer_class = serializers.ProjectDetailSerializer
-    queryset = Project.objects.all().order_by('-id')
+    # queryset = Project.objects.all().order_by('-id')
+
+    def get_queryset(self):
+        """Retrieve the projects for users that are project contributors."""
+        return Project.objects.filter(
+                contributor__user_id=self.request.user).order_by('-id')
 
     def get_serializer_class(self):
         """Return appropriate serializer class."""
