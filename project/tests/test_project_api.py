@@ -203,7 +203,7 @@ class PrivateProjectApiTests(TestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Project.objects.count(), 0)
+        self.assertFalse(Project.objects.exists())
 
     def test_delete_project_with_bad_id(self):
         """Test that should return a 404."""
@@ -324,7 +324,7 @@ class PrivateProjectApiTests(TestCase):
                                payload)
 
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(Contributor.objects.count(), 0)
+        self.assertFalse(Contributor.objects.exists())
 
     def test_create_bad_contributor_with_bad_user_id(self):
         """Test creating a bad contributor raises an error."""
@@ -715,7 +715,7 @@ class PrivateProjectApiTests(TestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Issue.objects.count(), 0)
+        self.assertFalse(Issue.objects.exists())
 
     def test_unauthorized_user_cannot_delete_an_issue(self):
         """That that an unauthorized user cannot delete an issue."""
